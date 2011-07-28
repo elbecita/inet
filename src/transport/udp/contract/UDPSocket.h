@@ -120,6 +120,13 @@ class INET_API UDPSocket
      */
     void setTimeToLive(int ttl);
 
+   /**
+    * Set the DSCP (Diffserv Code Point) field on outgoing IPv4 packets sent
+    * from this UDP socket. For IPv6 remote addresses, this option
+    * sets the Traffic Class header field.
+    */
+    void setDiffServCodePoint(int dscp);
+
     /**
      * Set the Broadcast option on the UDP socket. This will cause the
      * socket to receive broadcast packets as well.

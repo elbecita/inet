@@ -124,6 +124,16 @@ void UDPSocket::setTimeToLive(int ttl)
     sendToUDP(msg);
 }
 
+void UDPSocket::setDiffServCodePoint(int dscp)
+{
+    cMessage *msg = new cMessage("SetDSCP", UDP_C_SETOPTION);
+    UDPSetDiffServCodePointCommand *ctrl = new UDPSetDiffServCodePointCommand();
+    ctrl->setSockId(sockId);
+    ctrl->setDscp(dscp);
+    msg->setControlInfo(ctrl);
+    sendToUDP(msg);
+}
+
 void UDPSocket::setMulticastOutputInterface(int interfaceId)
 {
     cMessage *msg = new cMessage("SetMulticastOutputIf", UDP_C_SETOPTION);

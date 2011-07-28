@@ -180,6 +180,20 @@ class UDPSetTimeToLiveCommand extends UDPSetOptionCommand
 }
 
 //
+// Control info for setting the DSCP (Diffserv Code Point) field on outgoing 
+// IPv4 packets sent from an UDP socket. For IPv6 remote addresses, this option
+// sets the Traffic Class header field. To set the option, send a message to 
+// the ~UDP module with kind=UDP_C_SETOPTION and an and instance of this 
+// control info class attached.
+//
+// @see ~UDPCommandCode
+//
+class UDPSetDiffServCodePointCommand extends UDPSetOptionCommand
+{
+    int dscp;  // DSCP (IPv4) or Traffic Class (IPv6) 
+}
+
+//
 // Control info for setting the Broadcast option on an UDP socket.
 // To set the option, send a message to the ~UDP module with kind=UDP_C_SETOPTION
 // and an and instance of this control info class attached.
