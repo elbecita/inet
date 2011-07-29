@@ -339,20 +339,19 @@ void EtherMAC::processMsgFromNetwork(EtherTraffic *msg)
         if (isJam)
             error("Stray jam signal arrived while transmitting (usual cause is cable length exceeding allowed maximum)");
 
+        // set receive state and schedule end of reception
+        receiveState = RX_COLLISION_STATE;
+
+        insertEndReception(msg->getTreeId(), endRxTime);
+        cancelEvent(endRxMsg);
+        scheduleAt(endRxTime, endRxMsg);
+        delete msg;
+
         EV << "Transmission interrupted by incoming frame, handling collision\n";
         cancelEvent((transmitState==TRANSMITTING_STATE) ? endTxMsg : endIFGMsg);
 
         EV << "Transmitting jam signal\n";
         sendJamSignal(); // backoff will be executed when jamming finished
-
-        // set receive state and schedule end of reception
-        receiveState = RX_COLLISION_STATE;
-
-        insertEndReception(msg->getTreeId(), endRxTime);
-        endRxTime = insertEndReception(0, transmissionChannel->getTransmissionFinishTime()); //finish of transmit JAM
-        cancelEvent(endRxMsg);
-        scheduleAt(endRxTime, endRxMsg);
-        delete msg;
 
         numCollisions++;
         emit(collisionSignal, 1L);
