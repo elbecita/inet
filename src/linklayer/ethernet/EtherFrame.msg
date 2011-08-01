@@ -98,8 +98,8 @@ packet EthernetIIFrame extends EtherFrame
 //
 packet EtherFrameWithLLC extends EtherFrame
 {
-    int ssap;
     int dsap;
+    int ssap;
     int control;
 }
 
@@ -113,8 +113,11 @@ packet EtherFrameWithLLC extends EtherFrame
 // Header length: src(6)+dest(6)+length(2)+ssap(1)+dsap(1)+control(1)+
 // orgCode(3)+localCode(2) = 22 bytes
 //
-packet EtherFrameWithSNAP extends EtherFrame
+packet EtherFrameWithSNAP extends EtherFrameWithLLC
 {
+    dsap = 0xAA;
+    ssap = 0xAA;
+    control = 0x03;
     long orgCode;  // SNAP organization code, 0 for IP and ARP
     int localcode; // SNAP local code (stores ~EtherType for IP and ARP)
 }
