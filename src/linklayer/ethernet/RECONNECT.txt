@@ -1,0 +1,20 @@
+reconnect:
+
+csak az EtherMAC-et erinti, a ~FullDuplex-nel nincs teendo.
+
+kell egy uj RX_RECONNECT_STATE a MACReceiveState-be.
+
+Reconnect eseten full duplex eseten nincs teendo, rogton kezdheti az adast.
+Half duplex modban a reconnect idopontjatol legalabb max packet length + JAM ideig RX_RECONNECT_STATE, nem szabad kuldeni.
+
+Csak RX_RECONNECT_STATE alatt johetnek olyan JAM-ek, amikhez nem tartozik packet.
+Ez ido alatt ellenorizni kell a packet-JAM osszetartozast.
+RX_RECONNECT_STATE-bol csak RX_IDLE_STATE kovetkezhet: akkor, ha letelt az eredeti ido, es az rx packet queue is kiurult.
+Az RX_RECONNECT_STATE alatt erkezett uzeneteket eldobjuk.
+
+Technikailag: a queue-ba beteszem az endRxReconnectStateTime-t is, az rx packetek es JAM-ek meg a mostani modon kerulnek bele,
+az uj endRxReconnectStateTime a queue maximuma lesz.
+
+Ha letelt a reconnect state ideje, akkor kinullazom a numConcurrentTransmissions-t, innentol eleg szamolni a frame-eket
+es a JAM-eket a collisionhoz es az endRxTime-hoz.
+Lehet kezdeni adni.
