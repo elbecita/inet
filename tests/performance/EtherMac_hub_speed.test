@@ -85,7 +85,7 @@ network SpeedTest
             parameters:
                 @display("p=140,210");
             gates:
-                ethg[6];
+                ethg[10];
         }
     connections:
         hub.ethg++ <--> C100  <--> host_1_H_A.ethg;
