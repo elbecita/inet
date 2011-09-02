@@ -62,6 +62,9 @@ class IPv6ControlInfo
     int protocol enum(IPProtocolId);  // transport layer protocol
     IPv6Address destAddr; // destination IPv6 address
     IPv6Address srcAddr;  // source IPv6 address
+    unsigned char trafficClass;
+    abstract int diffServCodePoint;  // maps to bits 0-5 of trafficClass
+    abstract int explicitCongestionNotification;  // maps to bits 6-7 of trafficClass
     short hopLimit;       // hop limit
     int interfaceId = -1; // interface on which the datagram was received, or
                           // should be sent (see ~InterfaceTable)
