@@ -26,17 +26,17 @@
 
 #ifdef WITH_IPv4
 #include "ICMPAccess.h"
-#include "ICMPMessage_m.h"
+#include "ICMPMessage.h"
 #include "IPv4ControlInfo.h"
-#include "IPv4Datagram_m.h"
+#include "IPv4Datagram.h"
 #include "IPv4InterfaceData.h"
 #endif
 
 #ifdef WITH_IPv6
 #include "ICMPv6Access.h"
-#include "ICMPv6Message_m.h"
+#include "ICMPv6Message_m.h" //TODO: create a blank ICMPv6Message.h!
 #include "IPv6ControlInfo.h"
-#include "IPv6Datagram_m.h"
+#include "IPv6Datagram.h"
 #include "IPv6InterfaceData.h"
 #endif
 
