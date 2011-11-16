@@ -804,12 +804,12 @@ void IPv4::controlMessageToManetRouting(int code, IPv4Datagram *datagram)
     switch (code)
     {
     case MANET_ROUTE_UPDATE:
-        control->setSrcAddress(datagram->getSrcAddress());
-        control->setDestAddress(datagram->getDestAddress());
+        control->setSrcAddress(datagram->getSrcAddress().getInt());
+        control->setDestAddress(datagram->getDestAddress().getInt());
         break;
     case MANET_ROUTE_NOROUTE:
-        control->setSrcAddress(datagram->getSrcAddress());
-        control->setDestAddress(datagram->getDestAddress());
+        control->setSrcAddress(datagram->getSrcAddress().getInt());
+        control->setDestAddress(datagram->getDestAddress().getInt());
         control->encapsulate(datagram);
         break;
     default:

@@ -213,7 +213,7 @@ int NS_CLASS packet_queue_set_verdict(struct in_addr dest_addr, int verdict)
                         int iface;
                         double cost;
                         getNextHop(dest_addr.s_addr, nextHop, iface, cost);
-                        ctrl->setDest(nextHop.getMACAddress());
+                        ctrl->setDest(MACAddress(nextHop.getLo()));
                         qp->p->setControlInfo(ctrl);
                     }
                     sendDelayed(qp->p, delay, "to_ip");
