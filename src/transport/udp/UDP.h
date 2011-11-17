@@ -55,6 +55,7 @@ class INET_API UDP : public cSimpleModule
         bool isBroadcast;
         int multicastOutputInterfaceId;
         int ttl;
+        unsigned char typeOfService;
         std::map<IPvXAddress,int> multicastAddrs; // key: multicast address; value: output interface Id or -1
     };
 
@@ -95,6 +96,7 @@ class INET_API UDP : public cSimpleModule
     virtual void connect(int sockId, int gateIndex, const IPvXAddress& remoteAddr, int remotePort);
     virtual void close(int sockId);
     virtual void setTimeToLive(int sockId, int ttl);
+    virtual void setTypeOfService(int sockId, int typeOfService);
     virtual void setBroadcast(int sockId, bool broadcast);
     virtual void setMulticastOutputInterface(int sockId, int interfaceId);
     virtual void joinMulticastGroup(int sockId, const IPvXAddress& multicastAddr, int interfaceId = -1);

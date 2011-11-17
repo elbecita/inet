@@ -95,6 +95,7 @@ UDP::SockDesc::SockDesc(int sockId_, int appGateIndex_) {
     isBroadcast = false;
     multicastOutputInterfaceId = -1;
     ttl = -1;
+    typeOfService = 0; //FIXME ok as default?
 }
 
 //--------
@@ -186,8 +187,10 @@ void UDP::processCommandFromApp(cMessage *msg)
             UDPSetOptionCommand *ctrl = check_and_cast<UDPSetOptionCommand *>(msg->getControlInfo());
             if (dynamic_cast<UDPSetTimeToLiveCommand*>(ctrl))
                 setTimeToLive(ctrl->getSockId(), ((UDPSetTimeToLiveCommand*)ctrl)->getTtl());
+            else if (dynamic_cast<UDPSetTimeToLiveCommand*>(ctrl))
+                setTypeOfService(ctrl->getSockId(), ((UDPSetTypeOfServiceCommand*)ctrl)->getTypeOfService());
             else if (dynamic_cast<UDPSetBroadcastCommand*>(ctrl))
-                setTimeToLive(ctrl->getSockId(), ((UDPSetBroadcastCommand*)ctrl)->getBroadcast());
+                setBroadcast(ctrl->getSockId(), ((UDPSetBroadcastCommand*)ctrl)->getBroadcast());
             else if (dynamic_cast<UDPSetMulticastInterfaceCommand*>(ctrl))
                 setMulticastOutputInterface(ctrl->getSockId(), ((UDPSetMulticastInterfaceCommand*)ctrl)->getInterfaceId());
             else if (dynamic_cast<UDPJoinMulticastGroupCommand*>(ctrl))
@@ -712,6 +715,12 @@ void UDP::setTimeToLive(int sockId, int ttl)
 {
     SockDesc *sd = getSocketById(sockId);
     sd->ttl = ttl;
+}
+
+void UDP::setTimeToLive(int sockId, int typeOfService)
+{
+    SockDesc *sd = getSocketById(sockId);
+    sd->typeOfService = typeOfService;
 }
 
 void UDP::setBroadcast(int sockId, bool broadcast)
