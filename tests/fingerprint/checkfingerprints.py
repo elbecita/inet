@@ -189,7 +189,7 @@ def runSimulation(title, command, workingdir):
     return result
 
 def runProgram(command, workingdir):
-    process = subprocess.Popen(command, shell=False, cwd=workingdir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    process = subprocess.Popen(command, shell=True, cwd=workingdir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out = process.communicate()[0]
     out = re.sub("\r", "", out)
     return (process.returncode, out)
