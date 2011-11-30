@@ -1,3 +1,18 @@
+#
+# Fingerprint-based regression tested for the INET Framework.
+#
+# Accepts one or more CSV files with 4 columns: working directory,
+# options to opp_run, simulation time limit, expected fingerprint.
+# The program runs the INET simulations in the CSV files, and
+# reports fingerprint mismatches as FAILed test cases. To facilitate
+# test suite maintenance, the program also creates a new file (or files)
+# with the updated fingerprints.
+#
+# Implementation is based on Python's unit testing library, so it can be
+# integrated into larger test suites with minimal effort
+#
+# Author: Andras Varga
+#
 import argparse
 import os
 import re
@@ -14,10 +29,7 @@ opp_run = "opp_run"
 cpuTimeLimit = "10s"
 logFile = "test.out"
 
-computedFingerprints = {}  # id-to-fingerprint
-
 class FingerprintTestCaseGenerator():
-    lastId = 0
     fileToSimulationsMap = {}
     def generateFromCSV(self, csvFileList, filterRegexList):
         testcases = []
@@ -31,13 +43,17 @@ class FingerprintTestCaseGenerator():
         return testcases
 
     def generateFromDictList(self, simulations, filterRegexList):
+        class StoreFingerprintCallback:
+            def __init__(self, simulation):
+                self.simulation = simulation
+            def __call__(self, fingerprint):
+                self.simulation['computedFingerprint'] = fingerprint
+
         testcases = []
         for simulation in simulations:
             title = simulation['wd'] + " " + simulation['args']
             if not filterRegexList or ['x' for regex in filterRegexList if re.search(regex, title)]: # if any regex matches title
-                self.lastId += 1
-                testcases.append(FingerprintTestCase(self.lastId, title, simulation['wd'], simulation['args'], simulation['simtimelimit'], simulation['fingerprint']))
-                simulation['id'] = self.lastId
+                testcases.append(FingerprintTestCase(title, simulation['wd'], simulation['args'], simulation['simtimelimit'], simulation['fingerprint'], StoreFingerprintCallback(simulation)))
         return testcases
 
     # parse the CSV into a list of dicts
@@ -61,19 +77,17 @@ class FingerprintTestCaseGenerator():
                 ff.write(updatedContents)
                 ff.close()
                 print "Check " + updatedFile + " for updated fingerprints"
-    
+
     def formatUpdatedSimulationsTable(self, simulations):
-        global computedFingerprints
         # if there is a computed fingerprint, print that instead of existing one
         txt = "# workingdir".ljust(35) + ", " + "args".ljust(45) + ", " + "simtimelimit".ljust(15) + ", " + "fingerprint\n"
         containsComputedFingerprint = False
         for simulation in simulations:
             fingerprint = simulation['fingerprint']
-            if 'id' in simulation and simulation['id'] in computedFingerprints:
-                fingerprint = computedFingerprints[simulation['id']]
+            if 'computedFingerprint' in simulation:
+                fingerprint = simulation['computedFingerprint']
                 containsComputedFingerprint = True
             line = '{wd:<35}, {args:<45}, {simtimelimit:<15}, '.format(**simulation) + fingerprint
-            #line = simulation['wd'].ljust(35) + ", " + simulation['args'].ljust(45) + ", " + simulation['simtimelimit'].ljust(15) + ", " + fingerprint
             txt += line + "\n"
         txt = re.sub("( +),", ",\\1", txt)
         return txt if containsComputedFingerprint else None
@@ -95,7 +109,7 @@ class SimulationResult:
 class SimulationTestCase(unittest.TestCase):
     def runSimulation(self, title, command, workingdir):
         global logFile
-        
+
         # run the program and log the output
         FILE = open(logFile, "a")
         FILE.write("------------------------------------------------------\n")
@@ -109,9 +123,9 @@ class SimulationTestCase(unittest.TestCase):
         FILE.write("Exit code: " + str(exitcode) + "\n")
         FILE.write("Elapsed time:  " + str(round(elapsedTime,2)) + "s\n\n")
         FILE.close()
-    
+
         result = SimulationResult(command, workingdir, exitcode, elapsedTime=elapsedTime)
-    
+
         # process error messages
         errorLines = re.findall("<!>.*", out, re.M)
         errorMsg = ""
@@ -135,10 +149,10 @@ class SimulationTestCase(unittest.TestCase):
                 if m:
                     result.numEvents = int(m.group(1))
                     result.simulatedTime = float(m.group(2))
-    
+
         result.errormsg = errorMsg.strip()
         return result
-    
+
     def runProgram(self, command, workingdir):
         process = subprocess.Popen(command, shell=True, cwd=workingdir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         out = process.communicate()[0]
@@ -146,27 +160,28 @@ class SimulationTestCase(unittest.TestCase):
         return (process.returncode, out)
 
 class FingerprintTestCase(SimulationTestCase):
-    def __init__(self, id, title, wd, args, simtimelimit, fingerprint):
+    def __init__(self, title, wd, args, simtimelimit, fingerprint, storeFingerprintCallback):
         SimulationTestCase.__init__(self)
-        self.title = title 
-        self.id = id
+        self.title = title
         self.wd = wd
         self.args = args
-        self.simtimelimit = simtimelimit 
+        self.simtimelimit = simtimelimit
         self.fingerprint = fingerprint
+        self.storeFingerprintCallback = storeFingerprintCallback
 
     def runTest(self):
         # CPU time limit is a safety guard: fingerprint checks shouldn't take forever
-        global inetRoot, opp_run, nedPath, cpuTimeLimit, computedFingerprints
-    
+        global inetRoot, opp_run, nedPath, cpuTimeLimit
+
         # run the simulation
         workingdir = _iif(self.wd.startswith('/'), inetRoot + "/" + self.wd, self.wd)
         command = opp_run + " -n " + nedPath + " -l " + inetLib + " -u Cmdenv " + self.args + \
             _iif(self.simtimelimit!="", " --sim-time-limit=" + self.simtimelimit, "") + \
-            " --fingerprint=" + self.fingerprint + " --cpu-time-limit=" + cpuTimeLimit
-    
+            " --fingerprint=" + self.fingerprint + " --cpu-time-limit=" + cpuTimeLimit + \
+            " --vector-recording=false --scalar-recording=false"
+
         result = self.runSimulation(self.title, command, workingdir)
-    
+
         # process the result
         # note: fingerprint mismatch is technically NOT an error in 4.2 or before! (exitcode==0)
         if result.exitcode != 0:
@@ -178,18 +193,18 @@ class FingerprintTestCase(SimulationTestCase):
         elif result.isFingerprintOK is None:
             raise Exception("other")
         elif result.isFingerprintOK == False:
-            computedFingerprints[self.id] = result.computedFingerprint
+            self.storeFingerprintCallback(result.computedFingerprint)
             assert False, "fingerprint mismatch; actual: " + str(result.computedFingerprint)
         else:
             pass
-        
+
     def __str__(self):
         return self.title
 
 #
 # Copy/paste of TextTestResult, with minor modifications in the output:
 # we want to print the error text after ERROR and FAIL, but we don't want
-# to print stack traces.  
+# to print stack traces.
 #
 class SimulationTextTestResult(unittest.TestResult):
     """A test result class that can print formatted text results to a stream.
@@ -298,18 +313,19 @@ if __name__ == "__main__":
     if os.path.isfile(logFile):
         FILE = open(logFile, "w")
         FILE.close()
-        
+
     generator = FingerprintTestCaseGenerator()
     testcases = generator.generateFromCSV(args.testspecfile, args.match)
-    
+
     testSuite = unittest.TestSuite()
     testSuite.addTests(testcases)
 
-    testRunner = unittest.TextTestRunner(verbosity=9, resultclass=SimulationTextTestResult)
-    
+    testRunner = unittest.TextTestRunner(stream=sys.stdout, verbosity=9, resultclass=SimulationTextTestResult)
+
     testRunner.run(testSuite)
-    
+
+    print
     generator.writeUpdatedCSVFiles()
-    
+
     print "Log has been saved to %s" % logFile
 
