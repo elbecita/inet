@@ -1,0 +1,9 @@
+#!/bin/bash
+ 
+#opp_run -l ../src/inet -n ../src:. -u Cmdenv -r 1 -x General -g
+ 
+for i in {0..47}; do
+   echo -n "Run $i: "
+   opp_run -l ../src/inet -n ../src:. -u Cmdenv -r $i | grep -E 'Fingerprint|Scenario:'
+done
+

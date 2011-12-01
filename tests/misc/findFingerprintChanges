@@ -1,0 +1,36 @@
+#! /bin/bash
+
+endrev=topic/etherfixes
+startrev=integration
+
+commits=`git rev-list --reverse $startrev..$endrev || exit 1`
+i=0
+
+rm build.*
+rm fingerprints.*
+
+echo > .lastfingerprints
+for commit in $commits; do
+    (( i += 1 ))
+
+    echo
+    echo ---------------------------------------------------
+    echo -n $i ": "
+    git log -n 1 --pretty=oneline $commit | cat || exit 1
+    git checkout -q $commit || exit 1
+
+    echo "Building..."
+    (cd .. && make -j2) > build.$i.$commit || continue
+
+    echo "Collecting fingerprints..."
+    ./printFingerprints > fingerprints.$i.$commit || exit 1
+
+    if diff fingerprints.$i.$commit .lastfingerprints > /dev/null; then
+        echo 'fingerprints are the same'
+    else
+        echo 'FINGERPRINT CHANGE!'
+        git branch -f "fingerprint-change-$i"
+    fi
+
+    cp fingerprints.$i.$commit .lastfingerprints
+done
